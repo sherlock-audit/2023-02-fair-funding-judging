@@ -1,9 +1,117 @@
-# Issue H-1: Incorrect shares accounting cause liquidations to fail in some cases 
+# Issue H-1: amount_claimable_per_share accounting is broken and will result in vault insolvency 
+
+Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/44 
+
+## Found by 
+0x52, jkoppel, oxcm
+
+## Summary
+
+Claim accounting is incorrect if there is a deposit when amount_claimable_per_share !=0, because position.amount_claimed isn't initialized when the deposit is created.
+
+## Vulnerability Detail
+
+https://github.com/sherlock-audit/2023-02-fair-funding/blob/main/fair-funding/contracts/Vault.vy#L430-L440
+
+When calculating the amount of WETH to claim for a user, the contract simply multiplies the share count by the current amount_claimable_per_share and then subtracts the amount that has already been paid out to that token holder. This is problematic for deposits that happen when amount_claimable_per_share != 0 because they will be eligible to claim WETH immediately as if they had been part of the vault since amount_claimable_per_share != 0.
+
+Example;
+User A deposits 1 ETH and receives 1 share. Over time the loan pays itself back and claim is able to withdraw 0.1 WETH. This causes amount_claimable_per_share = 0.1. Now User B deposits 1 ETH and receives 1 share. They can immediately call claim which yields them 0.1 WETH (1 * 0.1 - 0). This causes the contract to over-commit the amount of WETH to payout since it now owes a total of 0.2 WETH (0.1 ETH to each depositor) but only has 0.1 WETH.
+
+## Impact
+
+Contract will become insolvent
+
+## Code Snippet
+
+https://github.com/sherlock-audit/2023-02-fair-funding/blob/main/fair-funding/contracts/Vault.vy#L200-L232
+
+## Tool used
+
+Manual Review
+
+## Recommendation
+
+position.amountClaimed needs to be initialized when a deposit is made:
+      
+        # deposit WETH to Alchemix
+        shares_issued: uint256 = self._deposit_to_alchemist(_amount)
+        position.shares_owned += shares_issued
+    +   position.amount_claimed += shares_issued * amount_claimable_per_share
+        self.total_shares += shares_issued
+        
+        self.positions[_token_id] = position
+        
+
+## Discussion
+
+**HickupHH3**
+
+Dup of #114
+
+**0x00052**
+
+Escalate for 1 USDC
+
+Not a dupe of #114. That focuses on depositing twice to the same token (which can't happen outside of admin abuse). The issue is that it generally applies to all deposits. Please re-read my example as to why this is an issue and how it leads to gross over-commitment of rewards.
+
+Two reasons I disagree with this being low:
+1) The argument that this will only be used for a short period and so "it doesn't have much impact" is a poor argument. This is meant as a general utility that anyone can use and they should be able to make a funding period as long as they want
+2) This is a serious issue that will lead to rewards being over-committed and the vault WILL go insolvent as a result. The extra fees being paid will be taken from other users and will GUARANTEED cause loss of funds to other users.
+
+Would like to add that this and #113 are the same issue and escalations should be resolved together.
+
+**sherlock-admin**
+
+ > Escalate for 1 USDC
+> 
+> Not a dupe of #114. That focuses on depositing twice to the same token (which can't happen outside of admin abuse). The issue is that it generally applies to all deposits. Please re-read my example as to why this is an issue and how it leads to gross over-commitment of rewards.
+> 
+> Two reasons I disagree with this being low:
+> 1) The argument that this will only be used for a short period and so "it doesn't have much impact" is a poor argument. This is meant as a general utility that anyone can use and they should be able to make a funding period as long as they want
+> 2) This is a serious issue that will lead to rewards being over-committed and the vault WILL go insolvent as a result. The extra fees being paid will be taken from other users and will GUARANTEED cause loss of funds to other users.
+> 
+> Would like to add that this and #113 are the same issue and escalations should be resolved together.
+
+You've created a valid escalation for 1 USDC!
+
+To remove the escalation from consideration: Delete your comment.
+To change the amount you've staked on this escalation: Edit your comment **(do not create a new comment)**.
+
+You may delete or edit your escalation comment anytime before the 48-hour escalation window closes. After that, the escalation becomes final.
+
+**Unstoppable-DeFi**
+
+Agree, duplicate of #113 and will fix.
+
+**hrishibhat**
+
+Escalation accepted
+
+Considering this & its duplicate #113  as valid issues
+
+**sherlock-admin**
+
+> Escalation accepted
+> 
+> Considering this & its duplicate #113  as valid issues
+
+This issue's escalations have been accepted!
+
+Contestants' payouts and scores will be updated according to the changes made on this issue.
+
+**Unstoppable-DeFi**
+
+https://github.com/Unstoppable-DeFi/fair-funding/pull/8
+
+
+
+# Issue H-2: Incorrect shares accounting cause liquidations to fail in some cases 
 
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/38 
 
 ## Found by 
-Bauer, hickuphh3, jkoppel, 0x52
+0x52, Bauer, hickuphh3, jkoppel
 
 ## Summary
 Accounting mismatch when marking claimable yield against the vault's shares may cause failing liquidations.
@@ -167,6 +275,10 @@ This is correct.
 
 We need to use `total_shares` and `position.shares_owned` to calculate the percentage of a positions contributions and then multiply it with the `remaining_shares` to receive the correct amount of shares during liquidation.
 
+**Unstoppable-DeFi**
+
+https://github.com/Unstoppable-DeFi/fair-funding/pull/9
+
 
 
 # Issue M-1: Migrator contract lacks sufficient permissions over vault positions 
@@ -174,7 +286,7 @@ We need to use `total_shares` and `position.shares_owned` to calculate the perce
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/91 
 
 ## Found by 
-0x52, Ruhum, hickuphh3, minhtrng, ABA, jkoppel
+0x52, hickuphh3, Ruhum, minhtrng, jkoppel, ABA
 
 ## Summary
 The migrator contract lacks sufficient permissions over vault shares to successfully perform migration.
@@ -233,7 +345,7 @@ https://github.com/Unstoppable-DeFi/fair-funding/pull/6
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/46 
 
 ## Found by 
-0xSmartContract, rvierdiiev, csanuragjain, hickuphh3, weeeh\_, ABA
+weeeh\_, hickuphh3, ABA, 0xSmartContract, rvierdiiev, csanuragjain
 
 ## Summary
 Operator access control isn't sufficiently resilient against a malicious or compromised actor.
@@ -263,12 +375,20 @@ Manual Review
 ## Recommendation
 Add an additional access control layer on top of operators: an `owner` that will be held by a multisig / DAO that's able to add / remove operators. 
 
+## Discussion
+
+**Unstoppable-DeFi**
+
+https://github.com/Unstoppable-DeFi/fair-funding/pull/10
+
+
+
 # Issue M-3: Starting timestamp can be bypassed by calling `settle` 
 
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/39 
 
 ## Found by 
-seyni, 0xlmanini, 7siech, rvierdiiev, HonorLt, 0xhacksmithh, Bahurum, XKET, ABA, ck, carrot
+ck, Bahurum, carrot, 0xhacksmithh, 0xlmanini, HonorLt, 7siech, ABA, rvierdiiev, XKET, seyni
 
 ## Summary
 The starting timestamp set or still unset by the owner through the `start_auction` function can be bypassed by calling `settle`, which sends the first token to the fallback and then starts the auction for subsequent tokenIds.
@@ -321,6 +441,10 @@ assert block.timestamp > self.epoch_end
 
 While the issue is valid, there are no funds at risk with starting the auction early. 
 Considering this issue a valid medium. 
+
+**Unstoppable-DeFi**
+
+https://github.com/Unstoppable-DeFi/fair-funding/pull/7
 
 
 
