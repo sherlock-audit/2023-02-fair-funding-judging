@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/44 
 
 ## Found by 
-jkoppel, oxcm, 0x52
+jkoppel, 0x52, oxcm
 
 ## Summary
 
@@ -123,6 +123,16 @@ Adding `new_shares` = `1.5e18`,
 Probably negligible given low yield accumulation + short auction reasoning. Nevertheless, consider using a higher precision value. Edit: I see https://github.com/Unstoppable-DeFi/fair-funding/pull/2 does just that.
 
 
+**jacksanford1**
+
+Message from Protocol Team:
+> It’s resolved by another fix, precision is increased now.
+
+Message from Lead Senior Watson:
+> yup resolved
+
+
+
 
 
 # Issue H-2: Incorrect shares accounting cause liquidations to fail in some cases 
@@ -130,7 +140,7 @@ Probably negligible given low yield accumulation + short auction reasoning. Neve
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/38 
 
 ## Found by 
-jkoppel, Bauer, hickuphh3, 0x52
+hickuphh3, Bauer, jkoppel, 0x52
 
 ## Summary
 Accounting mismatch when marking claimable yield against the vault's shares may cause failing liquidations.
@@ -310,7 +320,7 @@ Fix looks good - Proportional amount of shares to be liquidated now factors in t
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/91 
 
 ## Found by 
-jkoppel, 0x52, ABA, Ruhum, hickuphh3, minhtrng
+hickuphh3, jkoppel, minhtrng, Ruhum, 0x52, ABA
 
 ## Summary
 The migrator contract lacks sufficient permissions over vault shares to successfully perform migration.
@@ -373,7 +383,7 @@ Fix looks good - `raw_call` used to perform `delegatecall` on the migrator contr
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/46 
 
 ## Found by 
-weeeh\_, ABA, csanuragjain, hickuphh3, 0xSmartContract, rvierdiiev
+hickuphh3, 0xSmartContract, csanuragjain, weeeh\_, rvierdiiev, ABA
 
 ## Summary
 Operator access control isn't sufficiently resilient against a malicious or compromised actor.
@@ -425,7 +435,7 @@ Fix looks good:
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/39 
 
 ## Found by 
-XKET, Bahurum, HonorLt, ABA, seyni, 0xlmanini, carrot, ck, 7siech, 0xhacksmithh, rvierdiiev
+seyni, 7siech, XKET, carrot, rvierdiiev, Bahurum, ck, 0xhacksmithh, HonorLt, ABA, 0xlmanini
 
 ## Summary
 The starting timestamp set or still unset by the owner through the `start_auction` function can be bypassed by calling `settle`, which sends the first token to the fallback and then starts the auction for subsequent tokenIds.
