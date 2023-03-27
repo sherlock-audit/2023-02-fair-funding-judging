@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/44 
 
 ## Found by 
-0x52, jkoppel, oxcm
+jkoppel, oxcm, 0x52
 
 ## Summary
 
@@ -49,7 +49,7 @@ position.amountClaimed needs to be initialized when a deposit is made:
 
 Dup of #114
 
-**0x00052**
+**IAm0x52**
 
 Escalate for 1 USDC
 
@@ -104,6 +104,25 @@ Contestants' payouts and scores will be updated according to the changes made on
 
 https://github.com/Unstoppable-DeFi/fair-funding/pull/8
 
+**HickupHH3**
+
+Fix is ok: `total_claimable` is split amongst newly added shares as well (see issue #50), but I take it that it is an acceptable feature based on the resolution of the referenced issue.
+
+I'd also like to highlight that some yield can be lost due to rounding, see example below.
+
+### Example
+`total_shares` = `0.49e18`
+Assuming a yield of `0.0001` ETH has been accumulated and marked claimable so far,
+`amount_claimable_per_share` = `0.0001e18 * 1e6 / 0.49e18` = `204`
+`total_claimable` = `204 * 0.49e18` = `9.996e19`
+
+Adding `new_shares` = `1.5e18`,
+`amount_claimable_per_share` = `9.996e19 / (0.49e18 + 1.5e18)` = `50`
+`total_claimable` = `50 * (0.49e18 + 1.5e18)` = `9.95e19`, which is a discrepancy of `(9.996e19 - 9.95e19) / 1e6` = `4.6e-7` ETH.
+
+Probably negligible given low yield accumulation + short auction reasoning. Nevertheless, consider using a higher precision value. Edit: I see https://github.com/Unstoppable-DeFi/fair-funding/pull/2 does just that.
+
+
 
 
 # Issue H-2: Incorrect shares accounting cause liquidations to fail in some cases 
@@ -111,7 +130,7 @@ https://github.com/Unstoppable-DeFi/fair-funding/pull/8
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/38 
 
 ## Found by 
-0x52, Bauer, hickuphh3, jkoppel
+jkoppel, Bauer, hickuphh3, 0x52
 
 ## Summary
 Accounting mismatch when marking claimable yield against the vault's shares may cause failing liquidations.
@@ -279,6 +298,11 @@ We need to use `total_shares` and `position.shares_owned` to calculate the perce
 
 https://github.com/Unstoppable-DeFi/fair-funding/pull/9
 
+**HickupHH3**
+
+Fix looks good - Proportional amount of shares to be liquidated now factors in the actual shares the vault holds:`position.shares_owned / self.total_shares * shares_in_vault` instead of only the position's owned shares.
+
+
 
 
 # Issue M-1: Migrator contract lacks sufficient permissions over vault positions 
@@ -286,7 +310,7 @@ https://github.com/Unstoppable-DeFi/fair-funding/pull/9
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/91 
 
 ## Found by 
-0x52, hickuphh3, Ruhum, minhtrng, jkoppel, ABA
+jkoppel, 0x52, ABA, Ruhum, hickuphh3, minhtrng
 
 ## Summary
 The migrator contract lacks sufficient permissions over vault shares to successfully perform migration.
@@ -338,6 +362,10 @@ Will fix.
 
 https://github.com/Unstoppable-DeFi/fair-funding/pull/6
 
+**HickupHH3**
+
+Fix looks good - `raw_call` used to perform `delegatecall` on the migrator contract, which can only be set by the migration admin.
+
 
 
 # Issue M-2: Broken Operator Mechanism: Just 1 malicious / compromised operator can permanently break functionality 
@@ -345,7 +373,7 @@ https://github.com/Unstoppable-DeFi/fair-funding/pull/6
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/46 
 
 ## Found by 
-weeeh\_, hickuphh3, ABA, 0xSmartContract, rvierdiiev, csanuragjain
+weeeh\_, ABA, csanuragjain, hickuphh3, 0xSmartContract, rvierdiiev
 
 ## Summary
 Operator access control isn't sufficiently resilient against a malicious or compromised actor.
@@ -381,6 +409,15 @@ Add an additional access control layer on top of operators: an `owner` that will
 
 https://github.com/Unstoppable-DeFi/fair-funding/pull/10
 
+**HickupHH3**
+
+Fix looks good:
+- Introduced `owner` role with 2-step transfer process + event emissions
+- `msg.sender` is the initial `owner`
+- Operators can only be added / removed by `owner`
+
+[Non-zero add check](https://github.com/Unstoppable-DeFi/fair-funding/blob/f13edd27eb54156473a83cfb143bb7132c4f39ef/contracts/Vault.vy#L612) isn't necessary IMO, since the zero add will then have to claim ownership. Can consider removing, but no harm leaving it either
+
 
 
 # Issue M-3: Starting timestamp can be bypassed by calling `settle` 
@@ -388,7 +425,7 @@ https://github.com/Unstoppable-DeFi/fair-funding/pull/10
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/39 
 
 ## Found by 
-ck, Bahurum, carrot, 0xhacksmithh, 0xlmanini, HonorLt, 7siech, ABA, rvierdiiev, XKET, seyni
+XKET, Bahurum, HonorLt, ABA, seyni, 0xlmanini, carrot, ck, 7siech, 0xhacksmithh, rvierdiiev
 
 ## Summary
 The starting timestamp set or still unset by the owner through the `start_auction` function can be bypassed by calling `settle`, which sends the first token to the fallback and then starts the auction for subsequent tokenIds.
@@ -445,6 +482,12 @@ Considering this issue a valid medium.
 **Unstoppable-DeFi**
 
 https://github.com/Unstoppable-DeFi/fair-funding/pull/7
+
+**HickupHH3**
+
+Fix looks good:
+- `auction_started` boolean flag is used to prevent `settle()` from being called before an auction begins
+- auctions can now only be started once, and can never be restarted.
 
 
 
