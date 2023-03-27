@@ -3,7 +3,7 @@
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/44 
 
 ## Found by 
-jkoppel, 0x52, oxcm
+oxcm, jkoppel, 0x52
 
 ## Summary
 
@@ -140,7 +140,7 @@ Message from Lead Senior Watson:
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/38 
 
 ## Found by 
-hickuphh3, Bauer, jkoppel, 0x52
+hickuphh3, jkoppel, Bauer, 0x52
 
 ## Summary
 Accounting mismatch when marking claimable yield against the vault's shares may cause failing liquidations.
@@ -320,7 +320,7 @@ Fix looks good - Proportional amount of shares to be liquidated now factors in t
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/91 
 
 ## Found by 
-hickuphh3, jkoppel, minhtrng, Ruhum, 0x52, ABA
+hickuphh3, ABA, jkoppel, Ruhum, 0x52, minhtrng
 
 ## Summary
 The migrator contract lacks sufficient permissions over vault shares to successfully perform migration.
@@ -383,7 +383,7 @@ Fix looks good - `raw_call` used to perform `delegatecall` on the migrator contr
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/46 
 
 ## Found by 
-hickuphh3, 0xSmartContract, csanuragjain, weeeh\_, rvierdiiev, ABA
+hickuphh3, 0xSmartContract, ABA, csanuragjain, weeeh\_, rvierdiiev
 
 ## Summary
 Operator access control isn't sufficiently resilient against a malicious or compromised actor.
@@ -435,7 +435,7 @@ Fix looks good:
 Source: https://github.com/sherlock-audit/2023-02-fair-funding-judging/issues/39 
 
 ## Found by 
-seyni, 7siech, XKET, carrot, rvierdiiev, Bahurum, ck, 0xhacksmithh, HonorLt, ABA, 0xlmanini
+0xhacksmithh, XKET, HonorLt, ck, ABA, seyni, 0xlmanini, carrot, Bahurum, rvierdiiev, 7siech
 
 ## Summary
 The starting timestamp set or still unset by the owner through the `start_auction` function can be bypassed by calling `settle`, which sends the first token to the fallback and then starts the auction for subsequent tokenIds.
